@@ -21,7 +21,7 @@ nav a:hover{color:var(--a);border-color:var(--a)}nav a.on{background:var(--a);co
 #menu{display:none}
 .btn{font:inherit;text-transform:uppercase;letter-spacing:.08em;background:transparent;color:var(--a);border:1px solid var(--a);padding:7px 14px;cursor:pointer;transition:.15s;text-decoration:none;display:inline-block}
 .btn:hover,.btn.on{background:var(--a);color:var(--bg);box-shadow:0 0 12px rgba(168,255,62,.5)}.btn:disabled{opacity:.5;cursor:wait}
-section{max-width:1100px;margin:0 auto;padding:64px 16px 16px;position:relative}
+section{max-width:1100px;margin:0 auto;padding:64px 16px 16px;position:relative}main section{display:none}main section.pg{display:block}
 h2{font-size:22px;letter-spacing:.15em;text-transform:uppercase;color:var(--a);border-bottom:1px dashed var(--m);padding-bottom:8px;margin-bottom:20px}
 h2::before{content:"// ";color:var(--m)}
 #home{padding-top:72px;min-height:55vh}
@@ -63,10 +63,19 @@ input:focus,textarea:focus,select:focus{outline:0;border-color:var(--a);box-shad
 .er{color:#ff6b6b;min-height:1.4em;margin:10px 0 0}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);z-index:99;background:var(--a);color:var(--bg);padding:8px 16px}
 @media(max-width:720px){#menu{display:block}nav{display:none;width:100%;flex-direction:column}nav.open{display:flex}.about{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+
+@keyframes on{0%{opacity:0;transform:scaleY(.01);filter:brightness(4)}55%{opacity:1;transform:scaleY(1.02);filter:brightness(1.6)}100%{transform:none;filter:none}}
+@keyframes in{from{opacity:0;transform:translateY(12px);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0)}}
+@keyframes sw{from{transform:translateY(-140px)}to{transform:translateY(100vh)}}
+html::before{content:"";position:fixed;left:0;right:0;top:0;height:140px;pointer-events:none;z-index:94;background:linear-gradient(transparent,rgba(168,255,62,.07),transparent);animation:sw 8s linear infinite}
+.fresh{animation:on .45s ease-out}
+.fresh .card{animation:in .45s both}.fresh .card:nth-child(2){animation-delay:.08s}.fresh .card:nth-child(3){animation-delay:.16s}.fresh .card:nth-child(4){animation-delay:.24s}.fresh .card:nth-child(5){animation-delay:.32s}.fresh .card:nth-child(n+6){animation-delay:.4s}
+#boot{position:fixed;inset:0;z-index:92;background:var(--bg);padding:calc(env(safe-area-inset-top,0px) + 24px) 24px;color:var(--a);cursor:pointer;transition:opacity .5s}
+#boot.out{opacity:0}#boot div{animation:in .25s both}#boot::after{content:"[ click to skip ]";position:absolute;bottom:24px;right:24px;color:var(--m)}
 </style></head><body>
 <header><b id="logo">&gt; PERSONAL_ARCHIVE</b><button id="menu" class="btn" data-act="menu">[ MENU ]</button>
-<nav id="nav"><a data-go="home">Home</a><a data-go="channels">Channels</a><a data-go="projects">Projects</a><a data-go="hobbies">Hobbies</a><a data-go="about">About me</a></nav>
+<nav id="nav"><a href="#home" data-go="home">Home</a><a href="#channels" data-go="channels">Channels</a><a href="#projects" data-go="projects">Projects</a><a href="#hobbies" data-go="hobbies">Hobbies</a><a href="#about" data-go="about">About me</a></nav>
 <button id="lg" class="btn" data-act="showlogin" hidden>[ LOGIN ]</button><button id="adm" class="btn" data-act="openadm" hidden>[ ADMIN ]</button></header>
 <main>
 <section id="home"></section>
@@ -80,12 +89,13 @@ input:focus,textarea:focus,select:focus{outline:0;border-color:var(--a);box-shad
 <div class="md" id="md" hidden><div class="mdb" id="mdb"></div></div>
 <div class="lb" id="lb" hidden data-act="lbx"></div>
 <div id="toast" hidden></div>
+<div id="boot" hidden></div>
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^https?:\/\/\S+$/i.test(u||"");
 /* ====== PASTE YOUR SUPABASE VALUES HERE (Project Settings → API) ====== */
-const CFG={url:"https://jshwzwhlxtmajkcvswkt.supabase.co",key:"sb_publishable_U-mQT9NFg5dgobC98ahdeA_CKDEVMLT"};
+const CFG={url:"PASTE_SUPABASE_URL",key:"PASTE_SUPABASE_ANON_KEY"};
 /* ===================================================================== */
 const OK=CFG.url.startsWith("https://")&&!CFG.key.startsWith("PASTE");
 const SB=OK&&window.supabase?window.supabase.createClient(CFG.url,CFG.key):null;
@@ -108,7 +118,7 @@ function render(){
  const s=S.set,t=s.title||"PERSONAL_ARCHIVE",wait=S.nodb||!S.ready;
  document.title=t;$("#logo").textContent="> "+t;$("#adm").hidden=!S.owner;$("#lg").hidden=!(S.hasOwner&&!S.session&&!s.loginHidden);
  const msg=S.nodb?"<p class='m'>// ACCESS_DENIED — open this page while signed in to claude.ai.</p>":S.err?`<p class="m">// ERROR: ${esc(S.err)}</p>`:`<p class="m">// LOADING_ARCHIVE<span class="cur">_</span></p>${S.slow?"<p class='m'>// SIGNAL_WEAK — content can’t be reached yet.</p>":""}`;
- $("#home").innerHTML=`<div class="ht"></div><p class="m">&gt; SYSTEM_ONLINE // ARCHIVE_ACTIVE</p><h1 class="gl" data-t="${esc(t)}">${esc(t)}</h1>${s.tagline?`<p>${esc(s.tagline)}</p>`:""}<p>&gt; <span class="cur">_</span></p>`+(S.owner&&!s.title?`<p class="m">// Owner: set your site title in ADMIN → SETTINGS.</p>`:"");
+ $("#home").innerHTML=`<div class="ht"></div><p class="m">&gt; SYSTEM_ONLINE // ARCHIVE_ACTIVE</p><h1 class="gl" data-t="${esc(t)}">${esc(t)}</h1>${s.tagline?`<p>${esc(s.tagline)}</p>`:""}<p>&gt; <span class="cur">_</span></p><p>${["channels","projects","hobbies","about"].map(p=>`<a class="btn" href="#${p}" data-go="${p}">[ ${p.toUpperCase()} ]</a> `).join("")}</p>`+(S.owner&&!s.title?`<p class="m">// Owner: set your site title in ADMIN → SETTINGS.</p>`:"");
  const L=(c,fn)=>wait||S.err?msg:(S.d[c].length?`<div class="grid">${S.d[c].map(fn).join("")}</div>`:`<p class="m">// NO_ENTRIES_YET</p>`)+owner(c,"[ + ADD ENTRY ]");
  $("#b-channels").innerHTML=L("channels",(c,i)=>`<article class="card"><span class="m">CHANNEL_${String(i+1).padStart(2,"0")}</span>${img(c.image)}<h3>${esc(c.name)}</h3><p>${esc(c.desc)}</p>${okUrl(c.url)?`<a class="btn" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">[ ${esc(c.btn||"ACCESS CHANNEL")} → ]</a>`:""}</article>`);
  $("#b-projects").innerHTML=L("projects",p=>`<article class="card">${img(p.image)}<h3>${esc(p.title)}</h3><span class="m">[ ${esc(p.status||"Planned")} ]</span><p>${esc(p.desc)}</p><div>${String(p.tech||"").split(",").map(x=>x.trim()).filter(Boolean).map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</div>${okUrl(p.url)?`<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">[ OPEN → ]</a>`:""}</article>`);
@@ -183,7 +193,11 @@ function lb(){
  const ims=S.d.hobbies[l.h]?.imgs||[];if(!ims.length){el.hidden=true;return}
  el.innerHTML=`<button class="btn" data-act="lbn" data-d="-1">◀</button><img src="${blob(ims[l.i])}" alt=""><button class="btn" data-act="lbn" data-d="1">▶</button>`;el.hidden=false;
 }
-const go=id=>{$("#nav").classList.remove("open");$("#"+id).scrollIntoView({behavior:"smooth"})};
+const PAGES=["home","channels","projects","hobbies","about"];
+const go=id=>{$("#nav").classList.remove("open");location.hash=id};
+function route(){const h=location.hash.slice(1),p=PAGES.includes(h)?h:(h=="admin"&&S.pg)||"home",ch=p!==S.pg;S.pg=p;
+ document.querySelectorAll("main section").forEach(x=>x.classList.toggle("pg",x.id==p));
+ document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.go==p));if(ch){scrollTo(0,0);const el=$("#"+p);el.classList.add("fresh");setTimeout(()=>el.classList.remove("fresh"),900)}}
 document.addEventListener("click",e=>{
  const g=e.target.closest("[data-go]");if(g)return go(g.dataset.go);
  const l=e.target.closest("[data-lb]");if(l){S.lb={h:+l.dataset.h,i:+l.dataset.i};return lb()}
@@ -207,7 +221,7 @@ document.addEventListener("change",e=>{
  F.err="";drawF();
 });
 document.addEventListener("keydown",e=>{if(e.key=="Enter"&&e.target.id=="pw")auth();if(e.key=="Escape"){if(S.lb){S.lb=null;lb()}else if(!$("#md").hidden)closeMd()}});
-{const o=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting)document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.go==x.target.id))}),{rootMargin:"-40% 0px -55% 0px"});document.querySelectorAll("main section").forEach(s=>o.observe(s))}
+
 
 function showLogin(){showMd(`<h3 style="color:var(--a)">&gt; ${S.hasOwner?"OWNER_LOGIN":"CREATE_OWNER_ACCOUNT"}</h3>${S.hasOwner?"":`<p class="m">// First-time setup: this account becomes the only owner. Registration closes right after.</p>`}<label>Email</label><input id="em" type="email" autocomplete="username"><label>Password (8+ characters)</label><input id="pw" type="password" autocomplete="${S.hasOwner?"current-password":"new-password"}"><p class="er" id="ae"></p><div class="bar"><button class="btn" id="ab" data-act="login">${S.hasOwner?"LOGIN":"REGISTER"}</button><button class="btn" data-act="cancel">CANCEL</button></div>`)}
 async function auth(){
@@ -248,6 +262,14 @@ if(SB){
   delete:async id=>{await SB.storage.from("media").remove([id])}};
 }else S.err="SETUP_REQUIRED — paste your Supabase URL and anon key near the top of index.html";
 render();
-if(SB)boot();
-addEventListener("hashchange",()=>{if(SB&&S.ready&&location.hash=="#admin"&&!S.session)showLogin()});
+(()=>{let seen;try{seen=sessionStorage.getItem("boot")}catch(e){}
+ if(seen||matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+ const el=$("#boot"),L=["&gt; BOOT_SEQUENCE v1.0","&gt; MOUNTING ARCHIVE .......... [OK]","&gt; ESTABLISHING SECURE LINK .. [OK]","&gt; ACCESS GRANTED_"];
+ el.hidden=false;let i=0;
+ const end=()=>{clearInterval(t);el.classList.add("out");setTimeout(()=>el.hidden=true,500);try{sessionStorage.setItem("boot","1")}catch(e){}};
+ const t=setInterval(()=>{if(i<L.length)el.insertAdjacentHTML("beforeend","<div>"+L[i++]+"</div>");else end()},320);
+ el.onclick=end;
+})();
+route();if(SB)boot();
+addEventListener("hashchange",()=>{route();if(SB&&S.ready&&location.hash=="#admin"&&!S.session)showLogin()});
 </script></body></html>
